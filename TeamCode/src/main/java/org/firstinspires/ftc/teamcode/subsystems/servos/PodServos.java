@@ -34,9 +34,10 @@ public class PodServos extends Subsystem {
     private boolean pod3Waiting = false;
     
     // Constants
-    public static final double POD_EXTENDED = 0.4;
+    public static final double POD_EXTENDED = 0.3;
     public static final double POD_RETRACTED = 0.0;
-    public static final double POD2_RETRACTED = 0.1;  // Pod2 has different home
+    public static final double POD2_RETRACTED = 0.3;// Pod2 has different home
+    public static final double POD3_RETRACTED = 0.3;// Pod3 has different home
     public static final double EXTEND_TIME_SECONDS = 1.3;
 
     public PodServos(HardwareMap hardwareMap) {
@@ -55,7 +56,7 @@ public class PodServos extends Subsystem {
         // Initialize positions
         pod1.setPosition(POD_RETRACTED);
         pod2.setPosition(POD2_RETRACTED);
-        pod3.setPosition(POD_RETRACTED);
+        pod3.setPosition(POD3_RETRACTED);
         spinTop.setPosition(0);
     }
 

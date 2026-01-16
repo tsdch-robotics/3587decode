@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
+
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
@@ -16,17 +18,17 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(11)
-            .forwardZeroPowerAcceleration(-35.97865423404825)
-            .lateralZeroPowerAcceleration(-89.33263492121945)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.07, 0, 0.001, 0.02))
-             .headingPIDFCoefficients(new PIDFCoefficients(1,0,0.02,.025));
+            .mass(13.6);
+            //.forwardZeroPowerAcceleration(-35.97865423404825)
+          //  .lateralZeroPowerAcceleration(-89.33263492121945)
+           // .translationalPIDFCoefficients(new PIDFCoefficients(0.07, 0, 0.001, 0.02))
+           //  .headingPIDFCoefficients(new PIDFCoefficients(1,0,0.02,.025));
        // .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.03,0.0,0.00,0.6,0.0));
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
-            .xVelocity(61.53679987389272)
-            .yVelocity(77.48876857006644)
+           // .xVelocity(61.53679987389272)
+         //   .yVelocity(77.48876857006644)
             .rightFrontMotorName("RF")
             .rightRearMotorName("RR")
             .leftRearMotorName("LR")
@@ -41,8 +43,8 @@ public class Constants {
 
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(-3)
-            .strafePodX(.2)
+            .forwardPodY(0)
+            .strafePodX(-6)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("Pin")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
@@ -50,7 +52,7 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 0, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
@@ -58,5 +60,7 @@ public class Constants {
                 .mecanumDrivetrain(driveConstants)
                 .pinpointLocalizer(localizerConstants)
                 .build();
+
     }
+
 }

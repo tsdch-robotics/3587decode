@@ -1,33 +1,39 @@
-package org.firstinspires.ftc.teamcode.pedroPathing;
+package org.firstinspires.ftc.teamcode.opmodes.teleop;
+import static com.sun.tools.javac.jvm.ByteCodes.error;
+
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
-import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import android.graphics.Color;
-import java.util.function.Supplier;
 
-//testgithubchange
-//234
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+import java.lang.annotation.Target;
+import java.util.function.Supplier;
 
 @Configurable
 @TeleOp
-public class TeleOP extends OpMode {
-    private Follower follower;
+public class  GyroHeadingTeleOp extends OpMode {
+
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private Supplier<PathChain> pathChain;
@@ -60,19 +66,51 @@ public class TeleOP extends OpMode {
     private boolean servo3Extended = false;
     private boolean servo3Waiting = false;
     double ticksPerRevolution= 28;
+    public DcMotor RF;
+    public DcMotor RR;
+    public DcMotor LR;
+    public DcMotor LF;
 
 
+    private enum SequencerState {
+        IDLE,
+        SERVO1_UP,
+        SERVO1_DOWN,
+        SERVO2_UP,
+        SERVO2_DOWN,
+        SERVO3_UP,
+        SERVO3_DOWN
+    }
+
+    private SequencerState currentSequence = SequencerState.IDLE;
+    private ElapsedTime sequenceTimer = new ElapsedTime();
+
+    public IMU imu;
+    double LP;
+    double RP;
+    double HeadingError;
     @Override
     public void init() {
-        follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
-        follower.update();
-        telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+        imu = hardwareMap.get(IMU.class, "imu");
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.FORWARD,    // Direction Logo points
+                RevHubOrientationOnRobot.UsbFacingDirection.UP // Direction USB ports point
+        );
+        imu.initialize(new IMU.Parameters(orientationOnRobot));
+        RF = hardwareMap.get(DcMotor.class, "RF");
+        RF.setDirection(DcMotorSimple.Direction.FORWARD);
+        RR = hardwareMap.get(DcMotor.class, "RR");
+        RR.setDirection(DcMotorSimple.Direction.FORWARD);
+        LR = hardwareMap.get(DcMotor.class, "LR");
+        LR.setDirection(DcMotorSimple.Direction.REVERSE);
+        LF = hardwareMap.get(DcMotor.class, "LF");
+        LF.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        pathChain = () -> follower.pathBuilder() //Lazy Curve Generation
-                .addPath(new Path(new BezierLine(follower::getPose, new Pose(45, 98))))
-                .setHeadingInterpolation(HeadingInterpolator.linearFromPoint(follower::getHeading, Math.toRadians(45), 0.8))
-                .build();
+        RF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        RR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        LF.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        LR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
 
 
         //other motors
@@ -85,7 +123,7 @@ public class TeleOP extends OpMode {
             Shoot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Shoot.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         }
-       // Lift = hardwareMap.get(DcMotor.class, "Lift");
+        // Lift = hardwareMap.get(DcMotor.class, "Lift");
 
 
         //Servos
@@ -122,63 +160,48 @@ public class TeleOP extends OpMode {
         //The parameter controls whether the Follower should use break mode on the motors (using it is recommended).
         //In order to use float mode, add .useBrakeModeInTeleOp(true); to your Drivetrain Constants in Constant.java (for Mecanum)
         //If you don't pass anything in, it uses the default (false)
-        follower.startTeleopDrive();
     }
 
     @Override
     public void loop() {
-        //Call this once per loop
-        follower.update();
-        telemetryM.update();
 
+        double drive = -gamepad1.left_stick_y;
+        double strafe = gamepad1.left_stick_x;
+        double rotate = gamepad1.right_stick_x;
 
-        if (!automatedDrive) {
-            //Make the last parameter false for field-centric
-            //In case the drivers want to use a "slowMode" you can scale the vectors
+        // Inside loop()
+        YawPitchRollAngles robotOrientation = imu.getRobotYawPitchRollAngles();
 
-            //This is the normal version to use in the TeleOp
-            if (!slowMode) follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x,
-                    false // Robot Centric
-            );
+// Get the heading in Degrees
+        double heading = robotOrientation.getYaw(AngleUnit.DEGREES);
 
-                //This is how it looks with slowMode on
-            else follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y * slowModeMultiplier,
-                    -gamepad1.left_stick_x * slowModeMultiplier,
-                    -gamepad1.right_stick_x * slowModeMultiplier,
-                    false // Robot Centric
-            );
+        telemetry.addData("Raw IMU Heading", heading);
+        // Calculate the joystick inputs in the field-oriented frame of reference
+        double fieldDrive = drive * Math.cos(Math.toRadians(heading)) - strafe * Math.sin(Math.toRadians(heading));
+        double fieldStrafe = drive * Math.sin(Math.toRadians(heading)) + strafe * Math.cos(Math.toRadians(heading));
+        double LFPower = fieldDrive + fieldStrafe + rotate;
+        double RFPower = fieldDrive - fieldStrafe - rotate;
+        double RRPower = fieldDrive - fieldStrafe + rotate;
+        double LRPower = fieldDrive + fieldStrafe - rotate;
+        LF.setPower(LFPower + LP);
+        RF.setPower(RFPower - LP);
+        RR.setPower(RRPower - LP);
+        LR.setPower(LRPower+ LP);
+        telemetry.addData("LP", LP);
+        telemetry.addData("error", HeadingError);
+        telemetry.addData("heading", heading);
+
+        if(gamepad1.left_bumper){
+            gyroTurn();
+        }
+        else {
+            LP = 0;
         }
 
-        //Automated PathFollowing
-        if (gamepad2.aWasPressed()) {
-            follower.followPath(pathChain.get());
-            automatedDrive = true;
-        }
 
-        //Stop automated following if the follower is done
-        if (automatedDrive && (gamepad2.bWasPressed() || !follower.isBusy())) {
-            follower.startTeleopDrive();
-            automatedDrive = false;
-        }
 
-        // === Slow Mode ===
-        if (gamepad2.rightBumperWasPressed()) {
-            slowMode = !slowMode;
-        }
 
-        //Optional way to change slow mode strength
-        if (gamepad2.xWasPressed()) {
-            slowModeMultiplier += 0.25;
-        }
 
-        //Optional way to change slow mode strength
-        if (gamepad2.yWasPressed()) {
-            slowModeMultiplier -= 0.25;
-        }
 
         // === intakes ===
         if (gamepad1.right_trigger > 0.5) {
@@ -206,14 +229,6 @@ public class TeleOP extends OpMode {
         //get distance from limelight and put shooter in correct position
         if(gamepad1.dpad_up){
             //shoot at correct speed
-            double targetRPM = 4100; // Set your desired RPM here
-            double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
-
-            // Use setVelocity instead of setPower
-            Shoot.setVelocity(velocityTPS);
-        }
-        if(gamepad1.dpad_left){
-            //shoot at correct speed
             double targetRPM = 3000; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
 
@@ -229,9 +244,7 @@ public class TeleOP extends OpMode {
             Shoot.setVelocity(velocityTPS);
         }
 
-        if(Shoot.getVelocity()> 40000){
-            gamepad1.rumble(1000);
-        }
+
 
         // === Servos ===
         if(gamepad1.b ){
@@ -248,7 +261,7 @@ public class TeleOP extends OpMode {
             servo1Waiting = false;
         }
 
-        if(gamepad1.y ){
+        if(gamepad1.x ){
             Pod2.setPosition(.4);
             servo2Extended = true;
             servo2Waiting = true;
@@ -262,7 +275,7 @@ public class TeleOP extends OpMode {
             servo2Waiting = false;
         }
 
-        if(gamepad1.x ){
+        if(gamepad1.y ){
             Pod3.setPosition(.4);
             servo3Extended = true;
             servo3Waiting = true;
@@ -282,16 +295,76 @@ public class TeleOP extends OpMode {
             Pod3.setPosition(0);
 
         }
+        switch (currentSequence) {
+            case IDLE:
+                if (gamepad1.right_bumper) {
+                    Pod2.setPosition(0.4); // Move 3 Up
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO2_UP;
+                }
+                break;
+
+            case SERVO2_UP:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod2.setPosition(0.0); // Move 3 Down
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO2_DOWN;
+                }
+                break;
+
+            case SERVO2_DOWN:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod3.setPosition(0.4); // Move 2 Up
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO3_UP;
+                }
+                break;
+
+            case SERVO3_UP:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod3.setPosition(0.0); // Move 2 Down
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO3_DOWN;
+                }
+                break;
+
+            case SERVO3_DOWN:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod1.setPosition(0.4); // Move 1 Up
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO1_UP;
+                }
+                break;
+
+            case SERVO1_UP:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod1.setPosition(0.0); // Move 1 Down
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO1_DOWN;
+                }
+                break;
+
+            case SERVO1_DOWN:
+                if (sequenceTimer.seconds() >= .5) {
+                    currentSequence = SequencerState.IDLE; // Done!
+                }
+                break;
+        }
+
 
 
         // === SpinTop ===
+        /*
         if(gamepad1.left_bumper){
             SpinTop.setPosition(-.3);
         }
 
+
+
         if (gamepad1.right_bumper){
             SpinTop.setPosition(+.3);
-        }
+
+         */
 
 
         // === Hood ===
@@ -300,7 +373,7 @@ public class TeleOP extends OpMode {
         }
 
         if(gamepad2.dpad_up){
-            Hood.setPosition(.07);
+            Hood.setPosition(.099);
         }
 
         // === Shoot RPM ===
@@ -396,10 +469,7 @@ public class TeleOP extends OpMode {
 
 
 
-        telemetryM.debug("position", follower.getPose());
-        telemetryM.debug("velocity", follower.getVelocity());
-        telemetryM.debug("automatedDrive", automatedDrive);
-        telemetry.addData("position", follower.getPose());
+
 
         telemetry.addLine()
                 .addData("Shoot Speed", rpm);
@@ -407,4 +477,14 @@ public class TeleOP extends OpMode {
 
 
     }
+public void gyroTurn() {
+    double TargetHeading = 45;
+    double KP = .001;
+    YawPitchRollAngles robotOrientation = imu.getRobotYawPitchRollAngles();
+    double heading = robotOrientation.getYaw(AngleUnit.DEGREES);
+    double HeadingError = TargetHeading - heading;
+    LP = HeadingError * KP;
+}
+
+
 }

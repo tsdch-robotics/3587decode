@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.pedroPathing;
+package org.firstinspires.ftc.teamcode.opmodes.teleop;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
@@ -8,25 +8,27 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import android.graphics.Color;
-import java.util.function.Supplier;
 
-//testgithubchange
-//234
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
+import java.util.function.Supplier;
 
 @Configurable
 @TeleOp
-public class TeleOP extends OpMode {
+public class MaxTeleOp extends OpMode {
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
@@ -61,9 +63,24 @@ public class TeleOP extends OpMode {
     private boolean servo3Waiting = false;
     double ticksPerRevolution= 28;
 
+    private enum SequencerState {
+        IDLE,
+        SERVO1_UP,
+        SERVO1_DOWN,
+        SERVO2_UP,
+        SERVO2_DOWN,
+        SERVO3_UP,
+        SERVO3_DOWN
+    }
+
+    private SequencerState currentSequence = SequencerState.IDLE;
+    private ElapsedTime sequenceTimer = new ElapsedTime();
+
 
     @Override
     public void init() {
+
+
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startingPose == null ? new Pose() : startingPose);
         follower.update();
@@ -85,7 +102,7 @@ public class TeleOP extends OpMode {
             Shoot.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Shoot.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         }
-       // Lift = hardwareMap.get(DcMotor.class, "Lift");
+        // Lift = hardwareMap.get(DcMotor.class, "Lift");
 
 
         //Servos
@@ -206,20 +223,21 @@ public class TeleOP extends OpMode {
         //get distance from limelight and put shooter in correct position
         if(gamepad1.dpad_up){
             //shoot at correct speed
-            double targetRPM = 4100; // Set your desired RPM here
-            double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
-
-            // Use setVelocity instead of setPower
-            Shoot.setVelocity(velocityTPS);
-        }
-        if(gamepad1.dpad_left){
-            //shoot at correct speed
             double targetRPM = 3000; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
 
             // Use setVelocity instead of setPower
             Shoot.setVelocity(velocityTPS);
         }
+        if(gamepad1.dpad_up){
+            //shoot at correct speed
+            double targetRPM = 4000; // Set your desired RPM here
+            double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
+
+            // Use setVelocity instead of setPower
+            Shoot.setVelocity(velocityTPS);
+        }
+
 
         if(gamepad1.dpad_down){
             double targetRPM = 0; // Set your desired RPM here
@@ -229,9 +247,7 @@ public class TeleOP extends OpMode {
             Shoot.setVelocity(velocityTPS);
         }
 
-        if(Shoot.getVelocity()> 40000){
-            gamepad1.rumble(1000);
-        }
+
 
         // === Servos ===
         if(gamepad1.b ){
@@ -248,7 +264,7 @@ public class TeleOP extends OpMode {
             servo1Waiting = false;
         }
 
-        if(gamepad1.y ){
+        if(gamepad1.x ){
             Pod2.setPosition(.4);
             servo2Extended = true;
             servo2Waiting = true;
@@ -262,7 +278,7 @@ public class TeleOP extends OpMode {
             servo2Waiting = false;
         }
 
-        if(gamepad1.x ){
+        if(gamepad1.y ){
             Pod3.setPosition(.4);
             servo3Extended = true;
             servo3Waiting = true;
@@ -282,16 +298,73 @@ public class TeleOP extends OpMode {
             Pod3.setPosition(0);
 
         }
+        switch (currentSequence) {
+            case IDLE:
+                if (gamepad1.right_bumper) {
+                    Pod2.setPosition(0.4); // Move 3 Up
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO2_UP;
+                }
+                break;
+
+            case SERVO2_UP:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod2.setPosition(0.0); // Move 3 Down
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO2_DOWN;
+                }
+                break;
+
+            case SERVO2_DOWN:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod3.setPosition(0.4); // Move 2 Up
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO3_UP;
+                }
+                break;
+
+            case SERVO3_UP:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod3.setPosition(0.0); // Move 2 Down
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO3_DOWN;
+                }
+                break;
+
+            case SERVO3_DOWN:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod1.setPosition(0.4); // Move 1 Up
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO1_UP;
+                }
+                break;
+
+            case SERVO1_UP:
+                if (sequenceTimer.seconds() >= .5) {
+                    Pod1.setPosition(0.0); // Move 1 Down
+                    sequenceTimer.reset();
+                    currentSequence = SequencerState.SERVO1_DOWN;
+                }
+                break;
+
+            case SERVO1_DOWN:
+                if (sequenceTimer.seconds() >= .5) {
+                    currentSequence = SequencerState.IDLE; // Done!
+                }
+                break;
+        }
+
 
 
         // === SpinTop ===
-        if(gamepad1.left_bumper){
+        /*if(gamepad1.left_bumper){
             SpinTop.setPosition(-.3);
         }
 
         if (gamepad1.right_bumper){
             SpinTop.setPosition(+.3);
         }
+         */
 
 
         // === Hood ===
@@ -300,7 +373,7 @@ public class TeleOP extends OpMode {
         }
 
         if(gamepad2.dpad_up){
-            Hood.setPosition(.07);
+            Hood.setPosition(.099);
         }
 
         // === Shoot RPM ===
@@ -407,4 +480,6 @@ public class TeleOP extends OpMode {
 
 
     }
+
+
 }
