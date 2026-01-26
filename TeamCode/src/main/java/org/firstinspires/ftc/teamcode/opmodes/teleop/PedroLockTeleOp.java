@@ -28,14 +28,12 @@ import java.util.function.Supplier;
 
 @Configurable
 @TeleOp
-public class MaxTeleOp extends OpMode {
+public class PedroLockTeleOp extends OpMode {
     private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private Supplier<PathChain> pathChain;
     private TelemetryManager telemetryM;
-    private boolean slowMode = false;
-    private double slowModeMultiplier = 0.5;
 
     public DcMotor FIntake;
     public DcMotor BIntake;
@@ -49,9 +47,6 @@ public class MaxTeleOp extends OpMode {
     NormalizedColorSensor ColorSns1;
     NormalizedColorSensor ColorSns2;
     NormalizedColorSensor ColorSns3;
-    //boolean FIntakeOn = false;
-    //boolean BIntakeOn = false;
-// Add these fields to the class (around line 34-37)
     private ElapsedTime servoTimer1 = new ElapsedTime();
     private boolean servo1Extended = false;
     private boolean servo1Waiting = false;
@@ -62,6 +57,8 @@ public class MaxTeleOp extends OpMode {
     private boolean servo3Extended = false;
     private boolean servo3Waiting = false;
     double ticksPerRevolution= 28;
+    double LP;
+    double HeadingError;
 
     private enum SequencerState {
         IDLE,
@@ -147,28 +144,24 @@ public class MaxTeleOp extends OpMode {
         //Call this once per loop
         follower.update();
         telemetryM.update();
+// Inside loop()
+        double headingRadians = follower.getPose().getHeading();
+        double headingDegrees = Math.toDegrees(headingRadians);
 
+            // Determine the rotation power
+            // If left_bumper is held, use LP. Otherwise, use the right stick.
+            double rotationPower = (gamepad1.left_bumper) ? LP : -gamepad1.right_stick_x;
 
         if (!automatedDrive) {
-            //Make the last parameter false for field-centric
-            //In case the drivers want to use a "slowMode" you can scale the vectors
-
-            //This is the normal version to use in the TeleOp
-            if (!slowMode) follower.setTeleOpDrive(
+            follower.setTeleOpDrive(
                     -gamepad1.left_stick_y,
                     -gamepad1.left_stick_x,
-                    -gamepad1.right_stick_x,
-                    false // Robot Centric
-            );
-
-                //This is how it looks with slowMode on
-            else follower.setTeleOpDrive(
-                    -gamepad1.left_stick_y * slowModeMultiplier,
-                    -gamepad1.left_stick_x * slowModeMultiplier,
-                    -gamepad1.right_stick_x * slowModeMultiplier,
-                    false // Robot Centric
+                    rotationPower, // <--- Add your calculated value here
+                    false
             );
         }
+
+
 
         //Automated PathFollowing
         if (gamepad2.aWasPressed()) {
@@ -182,20 +175,7 @@ public class MaxTeleOp extends OpMode {
             automatedDrive = false;
         }
 
-        // === Slow Mode ===
-        if (gamepad2.rightBumperWasPressed()) {
-            slowMode = !slowMode;
-        }
 
-        //Optional way to change slow mode strength
-        if (gamepad2.xWasPressed()) {
-            slowModeMultiplier += 0.25;
-        }
-
-        //Optional way to change slow mode strength
-        if (gamepad2.yWasPressed()) {
-            slowModeMultiplier -= 0.25;
-        }
 
         // === intakes ===
         if (gamepad1.right_trigger > 0.5) {
@@ -375,8 +355,7 @@ public class MaxTeleOp extends OpMode {
         if(gamepad2.dpad_up){
             Hood.setPosition(.099);
         }
-
-        // === Shoot RPM ===
+        
 
 
 
@@ -473,6 +452,16 @@ public class MaxTeleOp extends OpMode {
 
 
     }
+    public void PedroLock(){
+        double targetHeading = -25;
+        double currentHeading = follower.getPose().getHeading();
+        HeadingError = targetHeading - currentHeading;
+        while (HeadingError > Math.PI) HeadingError -= 2 * Math.PI;
+        while (HeadingError < -Math.PI) HeadingError += 2 * Math.PI;
 
+        // Simple P-loop (Proportional) to turn the error into power
+        double kP = 1.5; // Tuning constant: increase if it turns too slow
+        LP = HeadingError * kP;
+    }
 
 }
