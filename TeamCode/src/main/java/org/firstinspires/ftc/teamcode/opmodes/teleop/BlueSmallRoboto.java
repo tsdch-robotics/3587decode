@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  * Outtake- left_trigger
  * Shoot- dpad_up
  * dontshoot- dpad_down
- *
+ *F
  */
 @Configurable
 @TeleOp
@@ -71,13 +71,13 @@ public class BlueSmallRoboto extends OpMode {
         Intake = hardwareMap.get(DcMotor.class, "Intake");
         Intake.setDirection(DcMotorSimple.Direction.REVERSE);
         Shoot1 = (DcMotorEx) hardwareMap.get(DcMotor.class, "Shoot1");
-        Shoot1.setDirection(DcMotorSimple.Direction.FORWARD);
+        Shoot1.setDirection(DcMotorSimple.Direction.REVERSE);
         if (Shoot1 != null) {
             Shoot1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Shoot1.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         }
         Shoot2 = (DcMotorEx) hardwareMap.get(DcMotor.class, "Shoot2");
-        Shoot2.setDirection(DcMotorSimple.Direction.REVERSE);
+        Shoot2.setDirection(DcMotorSimple.Direction.FORWARD);
         if (Shoot2 != null) {
             Shoot2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             Shoot2.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -156,33 +156,27 @@ public class BlueSmallRoboto extends OpMode {
 
         else if (gamepad1.left_trigger > 0.5) {
             Intake.setPower(-1);
+
         }
         else {
             Intake.setPower(0);
+
         }
 
-
-        /*
-        if(BIntake.isBusy()){
-            Shoot.setPower(0);
-        }
-        if(FIntake.isBusy()){
-            Shoot.setPower(0);
-        }
-
-         */
 
         // === Shooter ===
         //get distance from limelight and put shooter in correct position
 
+
         if(gamepad1.dpad_up){
             //shoot at correct speed
-            double targetRPM = 5000; // Set your desired RPM here
+            double targetRPM = 4000; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
 
             // Use setVelocity instead of setPower
             Shoot1.setVelocity(velocityTPS);
             Shoot2.setVelocity(velocityTPS);
+            Rail.setPosition(.01);
         }
 
 
@@ -194,6 +188,7 @@ public class BlueSmallRoboto extends OpMode {
             // Use setVelocity instead of setPower
             Shoot1.setVelocity(velocityTPS);
             Shoot2.setVelocity(velocityTPS);
+            Rail.setPosition(0);
         }
         double rpm = 0;
         if (Shoot1 != null) {
@@ -207,6 +202,7 @@ public class BlueSmallRoboto extends OpMode {
 
 
         // === Servos ===
+        /*
         if(gamepad1.a){
             Rail.setPosition(.01);
         }
@@ -214,6 +210,8 @@ public class BlueSmallRoboto extends OpMode {
             Rail.setPosition(0);
         }
 
+
+         */
 
 
         // === SpinTop ===
@@ -242,9 +240,8 @@ public class BlueSmallRoboto extends OpMode {
          */
 
 
-        /*
+
         telemetryM.debug("position", follower.getPose());
-        telemetryM.debug("velocity", follower.getVelocity());
         telemetryM.debug("automatedDrive", automatedDrive);
         telemetry.addData("position", follower.getPose());
 
@@ -254,10 +251,10 @@ public class BlueSmallRoboto extends OpMode {
 
 
 
-         */
+
     }
     public void PedroLock(){
-        double targetHeading = Math.toRadians(25);
+        double targetHeading = Math.toRadians(-40);
         double currentHeading = follower.getPose().getHeading();
         HeadingError = targetHeading - currentHeading;
         while (HeadingError > Math.PI) HeadingError -= 2 * Math.PI;
