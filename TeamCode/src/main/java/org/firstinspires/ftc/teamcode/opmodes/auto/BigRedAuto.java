@@ -91,10 +91,10 @@ public class BigRedAuto extends OpMode {
                 .setLinearHeadingInterpolation(MidCurve3.getHeading(), pickup3Pose.getHeading())
                 .build();
 
-        // scorePickup3 = robot.drive.follower.pathBuilder()
-        //         .addPath(new BezierLine(pickup3Pose, scorePose))
-        //         .setLinearHeadingInterpolation(pickup3Pose.getHeading(), scorePose.getHeading())
-        //         .build();
+        scorePickup3 = robot.drive.follower.pathBuilder()
+                .addPath(new BezierLine(pickup3Pose, scorePose))
+                .setLinearHeadingInterpolation(pickup3Pose.getHeading(), scorePose.getHeading())
+                .build();
     }
 
     @Override
@@ -130,63 +130,63 @@ public class BigRedAuto extends OpMode {
                 break;
                 
             case 1:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(grabPickup1, true);
                     setPathState(2);
                 }
                 break;
                 
             case 2:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(scorePickup1, true);
                     setPathState(3);
                 }
                 break;
                 
             case 3:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(grabPickup2P1, true);
                     setPathState(4);
                 }
                 break;
                 
             case 4:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(grabPickup2P2, true);
                     setPathState(5);
                 }
                 break;
                 
             case 5:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(scorePickup2, true);
                     setPathState(6);
                 }
                 break;
                 
             case 6:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(grabPickup3P1, true);
                     setPathState(7);
                 }
                 break;
                 
             case 7:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     robot.drive.followPath(grabPickup3P2, true);
                     setPathState(8);
                 }
                 break;
                 
             case 8:
-                if (!robot.drive.isBusy()) {
-                    // robot.drive.followPath(scorePickup3, true);
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
+                    robot.drive.followPath(scorePickup3, true);
                     setPathState(9);
                 }
                 break;
                 
             case 9:
-                if (!robot.drive.isBusy()) {
+                if (!robot.drive.isBusy() || pathTimer.getElapsedTimeSeconds() > 5.0) {
                     setPathState(-1);
                 }
                 break;

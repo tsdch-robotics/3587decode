@@ -34,6 +34,8 @@ public class PodServos extends Subsystem {
     private boolean pod3Waiting = false;
     
     // Constants
+    // TODO: VERIFY ON NEW ROBOT — Legacy TeleOps used 0.0 for Pod2/Pod3 retracted positions.
+    //  These are set to 0.3, which may be wrong. Test with ServoTester on actual hardware.
     public static final double POD_EXTENDED = 0.3;
     public static final double POD_RETRACTED = 0.0;
     public static final double POD2_RETRACTED = 0.3;// Pod2 has different home
@@ -165,6 +167,9 @@ public class PodServos extends Subsystem {
     /**
      * Spin top servo left.
      */
+    // TODO: BUG — spinTopPosition = -0.3 is invalid for a standard servo (range 0.0-1.0).
+    //  The SDK will clamp this to 0.0. If SpinTop is a continuous rotation servo, use
+    //  CRServo instead of Servo. Otherwise, find the correct position on the new robot.
     public void spinLeft() {
         spinTopPosition = -0.3;
     }

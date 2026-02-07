@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opmodes.test;
 
 import android.graphics.Color;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
@@ -11,6 +12,7 @@ import com.qualcomm.robotcore.hardware.NormalizedRGBA;
  * Test OpMode for color sensor calibration.
  * Displays raw and HSV color values.
  */
+@Disabled
 @TeleOp(name = "Color Sensor Test", group = "Test")
 public class ColorSensorTest extends LinearOpMode {
 

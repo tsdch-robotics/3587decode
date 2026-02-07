@@ -10,6 +10,7 @@ import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -30,6 +31,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import java.lang.annotation.Target;
 import java.util.function.Supplier;
 
+@Disabled
 @Configurable
 @TeleOp
 public class  GyroHeadingTeleOp extends OpMode {

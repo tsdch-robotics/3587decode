@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opmodes.test;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -15,6 +16,7 @@ import java.util.List;
  * Test OpMode for AprilTag detection.
  * Based on ConceptAprilTagEasy sample.
  */
+@Disabled
 @TeleOp(name = "AprilTag Test", group = "Test")
 public class AprilTagTest extends LinearOpMode {
 

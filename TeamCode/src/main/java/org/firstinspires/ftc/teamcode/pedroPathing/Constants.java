@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
-
 import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
@@ -17,6 +15,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
+    // TODO: RE-TUNE ON FIELD — translational P=0.005 is likely too low after the strafeEncoderDirection
+    //  fix. Try increasing P to 0.015-0.02. Robot may feel sluggish and drift at current value.
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(13.6)
             .forwardZeroPowerAcceleration(-41.09371208)
@@ -42,6 +42,8 @@ public class Constants {
 
 
 
+    // TODO: VERIFY ON NEW ROBOT — forwardPodY(1) and strafePodX(-1) were changed from 0.
+    //  Measure actual pod offsets from robot center with a ruler on the new robot.
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(1)
             .strafePodX(-1)
