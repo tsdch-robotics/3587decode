@@ -10,6 +10,7 @@ import org.firstinspires.ftc.teamcode.common.Subsystem;
 
 /**
  * Shooter subsystem controlling the flywheel motor and hood servo.
+ * Supports both power-based and velocity-based motor control.
  */
 public class Shooter extends Subsystem {
 
@@ -17,6 +18,8 @@ public class Shooter extends Subsystem {
     private Servo hood;
     
     private double shooterPower = 0;
+    private boolean useVelocity = false;
+    private double targetVelocity = 0;
     private double hoodPosition = 0;
     
     // TODO: VERIFY ON NEW ROBOT — Legacy TeleOps used hood.setDirection(FORWARD) with values 0.07-0.099.
@@ -24,6 +27,9 @@ public class Shooter extends Subsystem {
     // Hood position constants
     public static final double HOOD_DOWN = 0.0;
     public static final double HOOD_UP = 0.5;
+
+    // Velocity constant — legacy BlueSmallRoboto used 4000, RedSmallRoboto used 5000
+    public static final double DEFAULT_VELOCITY = 4000;
 
     public Shooter(HardwareMap hardwareMap) {
         shootMotor = hardwareMap.get(DcMotorEx.class, "Shoot");
@@ -38,30 +44,48 @@ public class Shooter extends Subsystem {
 
     @Override
     public void periodic() {
-        shootMotor.setPower(shooterPower);
+        if (useVelocity) {
+            shootMotor.setVelocity(targetVelocity);
+        } else {
+            shootMotor.setPower(shooterPower);
+        }
         hood.setPosition(hoodPosition);
     }
 
     @Override
     public void writeTelemetry(Telemetry telemetry) {
-        telemetry.addData("Shooter Power", "%.2f", shooterPower);
-        telemetry.addData("Shooter Velocity", "%.0f", shootMotor.getVelocity());
+        if (useVelocity) {
+            telemetry.addData("Shooter", "VEL target=%.0f actual=%.0f", targetVelocity, shootMotor.getVelocity());
+        } else {
+            telemetry.addData("Shooter", "PWR=%.2f vel=%.0f", shooterPower, shootMotor.getVelocity());
+        }
         telemetry.addData("Hood Position", "%.2f", hoodPosition);
     }
 
     // =========== SHOOTER CONTROL ===========
 
     /**
-     * Start the shooter at full power.
+     * Start the shooter at full power (power-based control).
      */
     public void shoot() {
+        useVelocity = false;
         shooterPower = 1.0;
     }
 
     /**
-     * Set shooter power.
+     * Start the shooter at a specific velocity in ticks per second.
+     * Uses the motor's built-in PID for consistent speed regardless of battery voltage.
+     */
+    public void shootAtVelocity(double ticksPerSecond) {
+        useVelocity = true;
+        targetVelocity = ticksPerSecond;
+    }
+
+    /**
+     * Set shooter power (power-based control).
      */
     public void setShooterPower(double power) {
+        useVelocity = false;
         shooterPower = power;
     }
 
@@ -69,7 +93,9 @@ public class Shooter extends Subsystem {
      * Stop the shooter.
      */
     public void stopShooter() {
+        useVelocity = false;
         shooterPower = 0;
+        targetVelocity = 0;
     }
 
     /**
@@ -83,7 +109,7 @@ public class Shooter extends Subsystem {
      * Check if shooter is running.
      */
     public boolean isRunning() {
-        return shooterPower > 0;
+        return shooterPower > 0 || (useVelocity && targetVelocity > 0);
     }
 
     // =========== HOOD CONTROL ===========
@@ -116,4 +142,3 @@ public class Shooter extends Subsystem {
         return hoodPosition;
     }
 }
-

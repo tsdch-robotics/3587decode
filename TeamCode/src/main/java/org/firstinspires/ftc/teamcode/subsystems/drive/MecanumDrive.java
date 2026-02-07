@@ -14,6 +14,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 /**
  * Mecanum drive subsystem wrapping Pedro Pathing Follower.
  * Provides both teleop and autonomous driving capabilities.
+ * Includes heading lock (PedroLock) for consistent shot alignment.
  */
 public class MecanumDrive extends Subsystem {
     
@@ -22,6 +23,11 @@ public class MecanumDrive extends Subsystem {
     private boolean slowMode = false;
     private double slowModeMultiplier = 0.5;
     private boolean robotCentric = true;
+
+    // Heading lock state
+    private boolean headingLockEnabled = false;
+    private double headingLockTarget = 0;
+    private static final double HEADING_LOCK_KP = 0.5;
 
     public MecanumDrive(HardwareMap hardwareMap) {
         follower = Constants.createFollower(hardwareMap);
@@ -38,6 +44,10 @@ public class MecanumDrive extends Subsystem {
         telemetry.addData("Drive Position", follower.getPose());
         telemetry.addData("Drive Velocity", follower.getVelocity());
         telemetry.addData("Slow Mode", slowMode ? "ON" : "off");
+        if (headingLockEnabled) {
+            telemetry.addData("Heading Lock", "ON (target=%.1f deg)",
+                    Math.toDegrees(headingLockTarget));
+        }
     }
 
     // =========== TELEOP METHODS ===========
@@ -52,14 +62,21 @@ public class MecanumDrive extends Subsystem {
 
     /**
      * Set drive from gamepad input.
+     * If heading lock is enabled, the turn axis is overridden with the P-controller output.
      * @param gamepad The gamepad to read from
      */
     public void setTeleOpDrive(Gamepad gamepad) {
         double multiplier = slowMode ? slowModeMultiplier : 1.0;
+        double turn;
+        if (headingLockEnabled) {
+            turn = computeHeadingLockTurn();
+        } else {
+            turn = -gamepad.right_stick_x * multiplier;
+        }
         follower.setTeleOpDrive(
             -gamepad.left_stick_y * multiplier,
             -gamepad.left_stick_x * multiplier,
-            -gamepad.right_stick_x * multiplier,
+            turn,
             robotCentric
         );
     }
@@ -76,6 +93,47 @@ public class MecanumDrive extends Subsystem {
             robotCentric
         );
     }
+
+    // =========== HEADING LOCK ===========
+
+    /**
+     * Enable heading lock to a target angle.
+     * When enabled, the turn axis is overridden with a P-controller that holds the target heading.
+     * @param targetRadians Target heading in radians
+     */
+    public void enableHeadingLock(double targetRadians) {
+        headingLockEnabled = true;
+        headingLockTarget = targetRadians;
+    }
+
+    /**
+     * Disable heading lock, returning turn control to the driver.
+     */
+    public void disableHeadingLock() {
+        headingLockEnabled = false;
+    }
+
+    /**
+     * Check if heading lock is enabled.
+     */
+    public boolean isHeadingLockEnabled() {
+        return headingLockEnabled;
+    }
+
+    /**
+     * Compute turn power from heading error using a P-controller.
+     * Ported from BlueSmallRoboto PedroLock() method.
+     */
+    private double computeHeadingLockTurn() {
+        double currentHeading = follower.getPose().getHeading();
+        double headingError = headingLockTarget - currentHeading;
+        // Normalize error to [-PI, PI]
+        while (headingError > Math.PI) headingError -= 2 * Math.PI;
+        while (headingError < -Math.PI) headingError += 2 * Math.PI;
+        return headingError * HEADING_LOCK_KP;
+    }
+
+    // =========== SLOW MODE ===========
 
     /**
      * Toggle slow mode on/off.
@@ -156,4 +214,3 @@ public class MecanumDrive extends Subsystem {
         return slowModeMultiplier;
     }
 }
-

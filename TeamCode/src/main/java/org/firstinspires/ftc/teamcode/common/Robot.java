@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.common;
 
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -35,6 +36,12 @@ public class Robot {
 
     // --- State ---
     public double batteryVoltage = 12.0;
+    
+    /**
+     * Last known pose from autonomous. Set in auto stop(), read in teleop init().
+     * Enables teleop to start with correct field position after auto ends.
+     */
+    public static Pose lastAutoPose = null;
 
     public Robot(HardwareMap hardwareMap, Telemetry telemetry) {
         try {
