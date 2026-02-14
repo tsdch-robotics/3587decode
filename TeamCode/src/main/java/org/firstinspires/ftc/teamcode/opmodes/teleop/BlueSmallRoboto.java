@@ -25,18 +25,17 @@ import java.util.function.Supplier;
  * Lock - Left_bumper
  * Intake- right_trigger
  * Outtake- left_trigger
- * Shoot- dpad_up
- * dontshoot- dpad_down
- *F
+ * Shoot- right_bumper
  */
 @Configurable
 @TeleOp
 public class BlueSmallRoboto extends OpMode {
-    private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private Supplier<PathChain> pathChain;
     private TelemetryManager telemetryM;
+    private Follower follower;
+
     public DcMotor Intake;
     public Servo Rail;
     public DcMotorEx Shoot1;
@@ -50,6 +49,8 @@ public class BlueSmallRoboto extends OpMode {
     double HeadingError;
 
     private ElapsedTime sequenceTimer = new ElapsedTime();
+    boolean shootActive = false;
+    boolean lastButtonState = false;
 
 
     @Override
@@ -167,8 +168,13 @@ public class BlueSmallRoboto extends OpMode {
         // === Shooter ===
         //get distance from limelight and put shooter in correct position
 
+        if (gamepad1.right_bumper && !lastButtonState) {
+            shootActive = !shootActive; // Flip the state
+        }
+        lastButtonState = gamepad1.right_bumper; // Update the memory for the next loop
 
-        if(gamepad1.dpad_up){
+        if(shootActive){
+
             //shoot at correct speed
             double targetRPM = 4000; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
@@ -176,12 +182,9 @@ public class BlueSmallRoboto extends OpMode {
             // Use setVelocity instead of setPower
             Shoot1.setVelocity(velocityTPS);
             Shoot2.setVelocity(velocityTPS);
-            Rail.setPosition(.01);
+            Rail.setPosition(.015);
         }
-
-
-
-        if(gamepad1.dpad_down){
+        else {
             double targetRPM = 0; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
 
@@ -190,6 +193,7 @@ public class BlueSmallRoboto extends OpMode {
             Shoot2.setVelocity(velocityTPS);
             Rail.setPosition(0);
         }
+
         double rpm = 0;
         if (Shoot1 != null) {
             double ticksPerSecond = Shoot1.getVelocity();

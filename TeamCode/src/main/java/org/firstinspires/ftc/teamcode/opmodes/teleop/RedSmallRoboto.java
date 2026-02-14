@@ -25,18 +25,17 @@ import java.util.function.Supplier;
  * Lock - Left_bumper
  * Intake- right_trigger
  * Outtake- left_trigger
- * Shoot- dpad_up
- * dontshoot- dpad_down
- *F
+ * Shoot- right_bumper
  */
 @Configurable
 @TeleOp
 public class RedSmallRoboto extends OpMode {
-    private Follower follower;
     public static Pose startingPose; //See ExampleAuto to understand how to use this
     private boolean automatedDrive;
     private Supplier<PathChain> pathChain;
     private TelemetryManager telemetryM;
+    private Follower follower;
+
     public DcMotor Intake;
     public Servo Rail;
     public DcMotorEx Shoot1;
@@ -50,7 +49,10 @@ public class RedSmallRoboto extends OpMode {
     double HeadingError;
 
     private ElapsedTime sequenceTimer = new ElapsedTime();
+    boolean shootActive = false;
+    boolean lastButtonState = false;
 
+    private double SlowDown = .7;
 
     @Override
     public void init() {
@@ -120,7 +122,7 @@ public class RedSmallRoboto extends OpMode {
         PedroLock();
         // Determine the rotation power
         // If left_bumper is held, use LP. Otherwise, use the right stick.
-        double rotationPower = (gamepad1.left_bumper) ? LP : -gamepad1.right_stick_x;
+        double rotationPower = (gamepad1.left_bumper) ? LP : -gamepad1.right_stick_x * SlowDown;
 
         if (!automatedDrive) {
             follower.setTeleOpDrive(
@@ -167,23 +169,23 @@ public class RedSmallRoboto extends OpMode {
         // === Shooter ===
         //get distance from limelight and put shooter in correct position
 
-        telemetry.addData("speed", Shoot1.getVelocity());
-        updateTelemetry(telemetry);
+        if (gamepad1.right_bumper && !lastButtonState) {
+            shootActive = !shootActive; // Flip the state
+        }
+        lastButtonState = gamepad1.right_bumper; // Update the memory for the next loop
 
-        if(gamepad1.dpad_up){
+        if(shootActive){
+
             //shoot at correct speed
-            double targetRPM = 5000; // Set your desired RPM here
+            double targetRPM = 4000; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
 
             // Use setVelocity instead of setPower
             Shoot1.setVelocity(velocityTPS);
             Shoot2.setVelocity(velocityTPS);
-            Rail.setPosition(.01);
+            Rail.setPosition(.015);
         }
-
-
-
-        if(gamepad1.dpad_down){
+        else {
             double targetRPM = 0; // Set your desired RPM here
             double velocityTPS = (targetRPM * ticksPerRevolution) / 60.0;
 
@@ -192,6 +194,7 @@ public class RedSmallRoboto extends OpMode {
             Shoot2.setVelocity(velocityTPS);
             Rail.setPosition(0);
         }
+
         double rpm = 0;
         if (Shoot1 != null) {
             double ticksPerSecond = Shoot1.getVelocity();
@@ -244,7 +247,6 @@ public class RedSmallRoboto extends OpMode {
 
 
         telemetryM.debug("position", follower.getPose());
-        telemetryM.debug("velocity", Shoot1.getVelocity());
         telemetryM.debug("automatedDrive", automatedDrive);
         telemetry.addData("position", follower.getPose());
 
@@ -257,7 +259,7 @@ public class RedSmallRoboto extends OpMode {
 
     }
     public void PedroLock(){
-        double targetHeading = Math.toRadians(20);
+        double targetHeading = Math.toRadians(40);
         double currentHeading = follower.getPose().getHeading();
         HeadingError = targetHeading - currentHeading;
         while (HeadingError > Math.PI) HeadingError -= 2 * Math.PI;
