@@ -36,15 +36,15 @@ public class BigBlueAuto extends OpMode {
     private int pathState;
     private final Pose startPose = new Pose(0, 0, Math.toRadians(0)); // Start Pose of our robot.
     private final Pose FirstUPPose = new Pose(-22, -.5, Math.toRadians(0));//score PreLoad
-    private final Pose scorePose = new Pose(-22, -.5, Math.toRadians(0)); // Scoring Pose of our robot.
-    private final Pose pickup1Pose = new Pose(43, 8, Math.toRadians(45));
-    private final Pose GrabLine1Pose = new Pose(32, 28, Math.toRadians(45));
-    private final Pose pickup2Pose = new Pose(57, 28, Math.toRadians(45));
-    private final Pose GrabLine2Pose = new Pose(38, 44,Math.toRadians(45));
-    private final Pose pickup3Pose = new Pose(73, 43, Math.toRadians(45));
-    private final Pose GrabLine3Pose = new Pose(53, 60, Math.toRadians(45));
-    private final Pose OffLinePose = new Pose(10,-19,Math.toRadians(45));
-    private final Pose OffTickPose = new Pose (32, 28, 44);
+    private final Pose scorePose = new Pose(-23, -.5, Math.toRadians(0)); // Scoring Pose of our robot.
+    private final Pose pickup1Pose = new Pose(-43, 8, Math.toRadians(42));
+    private final Pose GrabLine1Pose = new Pose(-32, 28, Math.toRadians(42));
+    private final Pose pickup2Pose = new Pose(-53, 34, Math.toRadians(44));
+    private final Pose GrabLine2Pose = new Pose(-36, 47,Math.toRadians(44));
+    private final Pose pickup3Pose = new Pose(-67, 53, Math.toRadians(44));
+    private final Pose GrabLine3Pose = new Pose(-52, 64, Math.toRadians(44));
+    private final Pose OffLinePose = new Pose(-10,-30,Math.toRadians(45));
+    private final Pose OffTickPose = new Pose (-32, -28, 44);
 
     //private Path scorePreload;
     private Path FirstUP;
@@ -274,7 +274,7 @@ public class BigBlueAuto extends OpMode {
             case 12:
                 // grabs Line3
                 if(!follower.isBusy()) {
-                    Intake.setPower(1);
+                    Intake.setPower(.9);
                     follower.setMaxPower(.4);
                     follower.followPath(grabPickup3P2, true);
                     setPathState(13);
